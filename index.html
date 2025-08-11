@@ -1,62 +1,90 @@
-<!DOCTYPE html>
-<html lang="nl">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KersMC</title>
-  <link rel="icon" type="image/png" href="logos/KersMC_logo.png" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css" />
-  <link rel="stylesheet" href="css/main.css" />
+  <script src="./auth0-spa-2.0.min.js"></script>
+  <script src="./auth0-9.23.3.min.js"></script>
 </head>
 <body>
+<script>
+const authSettings = {domain: "kersmc.eu.auth0.com", clientId: "GgvPQ4hrRY1i3nDAetOXQRFuHm5T5r7y"};
+localStorage.setItem("auth:settings", JSON.stringify(authSettings));
+function finish() {
+  const redirect = localStorage.getItem("auth:redirect");
+  if (redirect) {
+    localStorage.removeItem("auth:redirect");
+    window.location.href = redirect;
+  } else {
+    window.location.href = "/";
+  }
+}
+window.onload = async () => {
+  const query = window.location.search;
+  if (query === "?logout") {
+    localStorage.removeItem("auth:login");
+    console.log("logging out...")
+    finish();
+    //await client.logout();
+    return;
+  }
 
-  <div id="header-container"></div>
+  const authorizationParams = {
+    redirect_uri: `https://${window.location.host}/auth/`,
+    audience: `https://${authSettings.domain}/api/v2/`,
+    scope: "read:current_user read:user_idp_tokens update:current_user_metadata",
+    prompt: "login",
+  };
+  const client = await auth0spa.createAuth0Client({authorizationParams, ...authSettings});  
+  if (query.includes("code=") && query.includes("state=")) {
+    await client.handleRedirectCallback();
+    window.history.replaceState({}, document.title, "/auth/");
+    
+  } else if (query.includes("error=") && query.includes("error_description=")) {
+    const params = new URLSearchParams(new URL(window.location.href).search);
+    console.error(params.get("error"), params.get("error_description"));
+    document.body.innerHTML = params.get("error_description");
+    return;
 
-  <section class="section">
-    <img src="logos/KersMC_logo.png" alt="KersMC Logo" style="max-width: 200px; margin-bottom: 20px;">
-    <div class="hero-title">Welkom bij KersMC</div>
-    <div class="hero-subtitle">De Minecraft server voor iedereen, wat je interesse ook is!</div>
-    <p>KersMC is een Nederlandse Minecraft server voor iedereen. Of je nu op Java of Bedrock speelt, je bent welkom!</p>
-    <p>Tot snel op KersMC!</p>
-
-    <div class="gamemode-section">
-      <div class="gamemode-box">
-        <h2>Hardcore</h2>
-        <p>Dood? 12 uur niet spelen. Alleen voor de échte doorzetters. Wie overleeft het langst zonder dood te gaan?</p>
-      </div>
-      <div class="gamemode-box">
-        <h2>Nieuwe gamemode in aantocht!</h2>
-        <p>Wist jij al dat KersMC een tijdje bezig is met een nieuwe gamemode? Houd de Discord of <a href="https://kersmc.nl/nieuws" target="_blank">de nieuws pagina</a> goed in de gaten!</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="section has-background-light">
-    <div class="container has-text-centered">
-      <h2 class="title is-3" style="color: #363636;">Officiële partner</h2>
-      <p style="font-size: 1.2rem;">KersMC is trots om samen te werken met Etheron Hosting!</p>
-      <img src="logos/etheron-logo.png" alt="Etheron Logo" style="max-width: 200px; margin: 0 auto 20px auto; display: block;">
-      <a href="https://etheron.nl" target="_blank" class="button is-link is-medium mt-4">Bezoek Etheron.nl</a>
-    </div>
-  </section>
-
-  <div id="footer-container"></div>
-
-  <script>
-    // Laadt header en footer vanaf externe bestanden
-    fetch('partials/header.html').then(res => res.text()).then(data => {
-      document.getElementById('header-container').innerHTML = data;
-    });
-    fetch('partials/footer.html').then(res => res.text()).then(data => {
-      document.getElementById('footer-container').innerHTML = data;
-    });
-
-    function copyText(text) {
-      navigator.clipboard.writeText(text)
-        .then(() => alert("Gekopieerd: " + text))
-        .catch(err => alert("Kopiëren mislukt: " + err));
+  } else {
+    const params = new URLSearchParams(new URL(window.location.href).search);
+    if (params.get("redirect")) {
+      localStorage.setItem("auth:redirect", params.get("redirect"));
     }
-  </script>
+    await client.loginWithRedirect({authorizationParams});
+  }
 
+  if (!(await client.isAuthenticated())) {
+    console.log("not authenticated");
+    return;
+  }
+
+  let resp = await client.getTokenSilently({
+    authorizationParams,
+    detailedResponse: true,
+  });
+
+  if (!resp) {
+    console.error("No access token");
+    document.body.innerHTML = "No access token";
+    return;
+  }
+
+  const user = await client.getUser();
+  const management = new auth0.Management({
+    token: resp.access_token,
+    domain: authSettings.domain,
+  });
+  management.getUser(user.sub, (err, profile) => {
+    if (err) {
+      console.error(err);
+      document.body.innerHTML = err.message;
+      return;
+    }
+    
+    resp["user"] = profile;
+    localStorage.setItem("auth:login", JSON.stringify(resp));
+    finish();
+  });
+
+};
+</script>
 </body>
 </html>
