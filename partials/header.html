@@ -1,0 +1,34 @@
+<!-- Voorbeeld header met functionele Auth0 login knop -->
+<header class="navbar">
+  <div class="navbar-brand">
+    <a class="navbar-item" href="/">
+      <img src="/logos/KersMC_logo.png" alt="KersMC">
+    </a>
+  </div>
+  <div class="navbar-menu">
+    <div class="navbar-start">
+      <!-- Bestaande navigatie blijft hier ongewijzigd -->
+    </div>
+    <div class="navbar-end">
+      <!-- Bestaande knoppen blijven staan -->
+      <div class="navbar-item">
+        <button id="login-btn" class="button is-light">Login</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    const auth0Client = await createAuth0Client({
+      domain: "kersmc.eu.auth0.com",
+      client_id: "GgvPQ4hrRY1i3nDAetOXQRFuHm5T5r7y",
+      redirect_uri: window.location.origin + "/auth/callback"
+    });
+
+    document.getElementById("login-btn").addEventListener("click", async () => {
+      await auth0Client.loginWithRedirect();
+    });
+  });
+</script>
