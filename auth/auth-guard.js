@@ -8,8 +8,8 @@ const allowedRoles = {
 
 (async () => {
   const auth0Client = await auth0.createAuth0Client({
-    domain: "YOUR_DOMAIN",
-    client_id: "YOUR_CLIENT_ID",
+    domain: "kersmc.eu.auth0.com",
+    client_id: "GgvPQ4hrRY1i3nDAetOXQRFuHm5T5r7y",
     cacheLocation: "localstorage",
     useRefreshTokens: true
   });
