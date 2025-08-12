@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Logging in...</title>
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/1.13/auth0-spa-js.production.js"></script>
+    <script type="module">
+        import { authConfig } from './auth-config.js';
+
+        async function handleCallback() {
+            const auth0Client = await createAuth0Client({
+                domain: authConfig.domain,
+                client_id: authConfig.clientId,
+                redirect_uri: authConfig.redirectUri
+            });
+
+            await auth0Client.handleRedirectCallback();
+            window.location.href = "/";
+        }
+
+        handleCallback();
+    </script>
+</head>
+<body>
+    <p>Bezig met inloggen...</p>
+</body>
+</html>
